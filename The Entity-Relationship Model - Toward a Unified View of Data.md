@@ -24,7 +24,7 @@
 
   > domain, e.g. integer
 
-  <img src="week1_assets/attributes.png" alt="attributes" width="480" align="left">
+  <img src="week1_assets/attributes.png" alt="attributes" width="480">
 
   * AGE: EMPLOYEE -> NO-OF-YEARS, NAME: EMPLOYEE -> FIRST-NAME $\times$ LAST-NAME, EMPLOYEE-NO: EMPLOYEE -> EMPLOYEE-NO
   * More than one attribute may map from the same entity set into the same value set
@@ -48,25 +48,25 @@
 
 * Binary/ternary/... relationship:
 
-  <img src="week1_assets/binary_relationship.png" alt="binary_r" width="480" align="left">
+  <img src="week1_assets/binary_relationship.png" alt="binary_r" width="480">
 
-  <img src="week1_assets/ternary_relationship.png" alt="ternary_r" width="460" align="left">
+  <img src="week1_assets/ternary_relationship.png" alt="ternary_r" width="460">
 
   The above relationship can also be represented as:
 
-  <img src="week1_assets/aggregate_relationship.png" alt="aggregate_r" width="480" align="left">
+  <img src="week1_assets/aggregate_relationship.png" alt="aggregate_r" width="480">
 
   Binary relationships can have number constraints (**cardinality**):
 
-  <img src="week1_assets/binary_number.png" alt="binary_num" width="600" align="left">
+  <img src="week1_assets/binary_number.png" alt="binary_num" width="600">
 
 * Double lines mean an entity must participate in a relationship (people must be fans of football teams):
 
-  <img src="week1_assets/must_participate.png" alt="must_r" width="480" align="left">
+  <img src="week1_assets/must_participate.png" alt="must_r" width="480">
 
 * Relationships also have attributes (PERCENTAGE-OF-TIME):
 
-  <img src="week1_assets/relationship_with_attribute.png" alt="r_attribute" width="520" align="left">
+  <img src="week1_assets/relationship_with_attribute.png" alt="r_attribute" width="520">
 
 
 
@@ -108,7 +108,7 @@ If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1
 
 ### E-R diagram
 
-<img src="week1_assets/diagram.png" alt="diagram" width="520" align="left">
+<img src="week1_assets/diagram.png" alt="diagram" width="520">
 
 * regular box - entity set (existence dependency -> double line: weak entity)
 * diamond-shaped box - relationship
@@ -117,7 +117,7 @@ If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1
 
 #### Reduction to tables (relations)
 
-<img src="week1_assets/relations.png" alt="relations" width="900" align="left">
+<img src="week1_assets/relations.png" alt="relations" width="900">
 
 ### Semantics
 
@@ -169,7 +169,7 @@ $$ R = \{\,(x_1, x_2, \ldots, x_n) \mid x_1 \in X_1,\ x_2 \in X_2,\ \ldots,\ x_n
 
 $X_1, X_2, ...,X_n$ -- domains, $(x_1, x_2, \ldots, x_n)$ -- tuples
 
-<img src="week1_assets/relation_model.png" alt="relation_model" width="650" align="left">
+<img src="week1_assets/relation_model.png" alt="relation_model" width="650">
 
 * Ambiguity in semantics: In ER-model, attributes are bounded to entity/relationship. However, in the relational model, there might be **domains with the same name in the same relation**. And relational operators in relational model may also cause ambiguity. For example, both EMPLOYEE and SHIP has a **domain** called NO-OF-YEARS. But joining EMPLOYEE and SHIP on this domain produces no meaning in reality.
 * In the relational model, “attribute” B of a relation is functionally dependent on “attribute” A of the same relation if each value of A **has no more than one value of B associated with it** in the relation.
@@ -181,9 +181,9 @@ $X_1, X_2, ...,X_n$ -- domains, $(x_1, x_2, \ldots, x_n)$ -- tuples
 
 Network model is the semantics of a **data structure diagram**. Each of its rectangular box represents a record type.
 
-<img src="week1_assets/network_model.png" alt="network_model" width="700" align="left">
+<img src="week1_assets/network_model.png" alt="network_model" width="700">
 
-<img src="week1_assets/network_model_2.png" alt="network_model_2" width="350" align="left">
+<img src="week1_assets/network_model_2.png" alt="network_model_2" width="350">
 
 * For 1:n binary relationships -- an arrow
 * For m:n binary relationships -- a "relationship record" type is created (Fig. 17a)
@@ -199,7 +199,7 @@ Entities have names (**entity names**) such as “Peter Jones”, “blue”, or
 
 An entity is represented by the **entity-name-set-name/entity-name** pair such as NAME/Peter Jones, EMPLOYEE-NO/2566, and NO-OF-YEARS/20 (ambiguity between "entities" and "attributes").
 
-<img src="week1_assets/entity_set_model.png" alt="entity_set" width="450" align="left">
+<img src="week1_assets/entity_set_model.png" alt="entity_set" width="450">
 
 **Differences from ER-model:**
 
