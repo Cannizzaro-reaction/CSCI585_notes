@@ -4,7 +4,7 @@
 
 ## Entity-Relationship (E-R) Model
 
-* Level 1: Conceptual data model: Entities, Relationships, Values
+* Level 1: Conceptual data model (which exists in our minds): Entities, Relationships, Values
 * Level 2: Representation of conceptual objects
 
 
@@ -20,7 +20,7 @@
 
 * An entity is represented by a set of **attributes**
 
-* An attribute is a **function** that maps an entity into a domain
+* **An attribute is a function that maps an entity into a domain**
 
   > domain, e.g. integer
 
@@ -30,7 +30,7 @@
   * More than one attribute may map from the same entity set into the same value set
   * Attribute maps a given entity to a single value
 
-* A set of entities of the same type is termed an entity set
+* A set of entities of the same type is termed an **entity set**
 
   > e.g. football teams, students
 
@@ -44,7 +44,7 @@
 
 * Relationships of the same type are contained in a **relationship set**.
 
-* If $E_1, E_2, ...E_n$ are entity sets, then a relationship set $R$ is a subset of $\{[e_1, e_2, ..., e_n]|e_1\in E_1, e_2\in E_2, ... e_n\in E_n\}$ where $[e_1, e_2, ..., e_n]$ is a relationship (the relationships that truly exist may only be a part of all the possible matches).
+* If $E_1, E_2, ...E_n$ are **entity sets**, then a **relationship set** $R$ is a subset of $\{[e_1, e_2, ..., e_n]|e_1\in E_1, e_2\in E_2, ... e_n\in E_n\}$ where $[e_1, e_2, ..., e_n]$ is a relationship (the relationships that truly exist may only be a part of all the possible matches).
 
 * Binary/ternary/... relationship:
 
@@ -70,6 +70,18 @@
 
 
 
+**[Conclusion: Information concerning entities and relationships]**
+
+* Entity and Entity Set
+  * Entity set: e.g. EMPLOYEE, PROJECT, DEPARTMENT
+* Relationship, Role, and Relationship Set
+  * The role of an entity in a relationship is the function that it performs in the relationship
+* Attribute, Value, and Value Set
+* Conceptual Information Structure
+  * How to organize the information associated with entities and relationships
+
+
+
 ### Key
 
 * Level 2 (representations of conceptual objects)
@@ -88,15 +100,15 @@
 
 #### Keys in relationships
 
-Since a relationship is identified by the involved entities, the primary key of a relationship can be represented by *the primary keys of the involved entities*. 
+Since a relationship is identified by the involved entities, **the primary key of a relationship** can be represented by *the primary keys of the involved entities*. 
 
 If relationship $R$ is a relationship set involving entity sets $E_1, E_2, ...E_n$. If $R$ has no attributes then its superkey (uniquely defines...) is: $primary-key(E_1)\cup primary-key(E_2)\cup ...\cup primary-key(E_n)$
 
-If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1)$
+If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1)$ (just involve E1 and E2)
 
 #### Weak v.s. strong entity sets
 
-* An entity set that **does not have sufficient attributes to form a primary key** is termed a *weak* entity set. An entity set that has a primary key is termed a *strong/regular* entity set.
+* An entity set that **does not have sufficient attributes to form a primary key** is termed a *weak* entity set. An entity set that has a primary key is termed a *strong/regular* entity set. For weak entity relation, relationships are used for identifying the entities.
 *  A weak entity set must be associated with an **identifying or owner** entity set.
   * The identifying entity -> owns the weak entity set that it defines
   * **Identifying relationship**: the weak entity set <-> the identifying entity set
@@ -110,7 +122,7 @@ If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1
 
 <img src="week1_assets/diagram.png" alt="diagram" width="520">
 
-* regular box - entity set (existence dependency -> double line: weak entity)
+* rectangular box - entity set (existence dependency -> double line: weak entity)
 * diamond-shaped box - relationship
 
 
@@ -123,8 +135,8 @@ If $E_1 \rightarrow E2$ is many to one, then $R$'s primary key: $primary-key(E_1
 
 #### Data Integrity Constraints
 
-* Allowable values: constraints from the value sets
-* Permitted values: a number might be allowed in a value set, but not for a certain attribute (e.g. the age of employees range from 20 to 65)
+* **Allowable values**: constraints from the **value sets**
+* **Permitted values**: a number might be allowed in a value set, but not for a certain attribute (e.g. the age of employees range from 20 to 65)
 * Existing values: 
   * Constraints between sets of existing values, e.g. $$ \{\, NAME(e) \mid e \in MALE\text{-}PERSON \,\} \subseteq \{\, NAME(e) \mid e \in PERSON \,\} $$
   * Constraints between particular values, e.g. $$ TAX(e) \le SALARY(e),\quad e \in EMPLOYEE $$

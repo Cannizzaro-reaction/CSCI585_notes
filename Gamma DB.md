@@ -79,19 +79,15 @@ Example: $TMP2 \leftarrow \sigma_{dname=Toy}(Emp\bowtie Dept)$
 
 **[The join operator: 2 steps --> step 3 (build) + step 4 (probe)]**
 
-* **Build**: Constructs a hash table on the join attribute
+* **Build**: Constructs a hash table on the inner relation, using the join attribute
 
-  * Tuples from the inner relation are inserted into a memory-resident hash table by hashing on the join attribute value
+  - Usually use the **smaller** relation as the inner relation, so that its hash table fits in memory
+  - Each tuple is hashed on the join attribute, and the hash value is used as an index into the split table to obtain the address of the destination joining process (processor + port)
+    - Data is sent directly from one operator to another; it does not flow through the scheduler
+  - Arriving tuples are inserted into a memory-resident hash table by hashing on the join attribute value (at each joining processor)
+  - Since the outer relation is routed with the same hash function and split table in the probe phase, all tuples with the same join attribute value end up at the same joining processor
 
-  * Usually use the **smaller** relation as the inner relation (smaller hash table)
-
-  * The result hash value is then used as an index into the **split table** to obtain **the address of the destination process** that should receive the tuple 
-
-    With split tables, data can be sent directly from an operator to the destination process. Data doesn't flow through scheduler!
-
-  * All tuples with the same join attribute value are in the same partitioned bucket
-
-    <img src="week2_assets/split_table.png" style="zoom: 67%;" />
+  <img src="week2_assets/split_table.png" style="zoom: 67%;" />
 
 * **Probe**: Look up the hash table for a joining record
 
@@ -132,8 +128,8 @@ Example: $TMP2 \leftarrow \sigma_{dname=Toy}(Emp\bowtie Dept)$
 
 <img src="week2_assets/parallel_hybrid_hash_join.png" style="zoom: 67%;" />
 
-* **Partitioning split table**: Separates the joining relations into N logical buckets
-* **Joining split table**: Route tuples to their respective joining processor (i.e. split each bucket to K disks) -> parallelizing the joining phase
+* **Partitioning split table**: Separates both R and S into **N logical buckets**, and declusters buckets 2 to N (the ones that must be stored temporarily) across the **K disk sites** (each of these buckets has K entries in the table).
+* **Joining split table**: During the **joining phase**, routes the tuples of a bucket by hashing **to the M joining processors**, with each processor handling one portion of that bucket. These processors do not necessarily have disks attached, and M may be less than, equal to, or greater than K.
 
 
 
@@ -161,8 +157,62 @@ Example: $TMP2 \leftarrow \sigma_{dname=Toy}(Emp\bowtie Dept)$
 
 
 
+## Other techniques
+
+### Concurrency control
+
+Each site in Gamma has its own **local lock manager** and **deadlock detector**. The lock manager maintains a lock table and a transaction wait-for-graph.
+
+In order to detect multisite deadlocks, Gamma uses **a centralized deadlock detection algorithm**.
+
+* The **centralized deadlock detector** sends a message to each node periodically, requesting the **local transaction wait-for-graph** of that node.
+* The centralized deadlock detector creates a **global** transaction wait-for-graph.
+* When a cycle is detected in the graph, the centralized deadlock manager chooses to abort the transaction holding the fewest number of locks.
+
+
+
+### Recovery
+
+- LSN = node number + local sequence number.
+- Each query processor i sends its log records to log manager (i mod M); this static mapping makes recovery easy.
+- Log manager tracks the flushed LSN of each node and returns it to the nodes.
+- WAL: a dirty page can be written to disk only if page LSN ≤ flushed LSN; otherwise, flush the log first.
+- Buffer manager keeps T clean pages; if below T, the local log manager asks for a log flush in advance.
+- Commit: the scheduler sends commit records to the log managers (group commit).
+- Abort: each node fetches its log records and undoes them in reverse order (ARIES).
+
+
+
 ## Performance
 
-* **Speedup**: Perform a complex query/update faster. Ideally, it should become more than N times faster with N nodes
+* **Speedup**: Keep the problem size fixed and add more nodes. Ideally, speedup is linear: with N times as many nodes, a query runs N times faster.
+* **Scaleup**: Grow the problem size and the number of nodes proportionally. Ideally, the response time stays constant.
 
-* **Scaleup**: Maintain the same speed for a complex query/update as the database grows by increasing the number of nodes
+
+
+### Select speedup
+
+<img src="week2_assets/performance_1.png" style="zoom: 67%;" />
+
+* speedup (N) = response time for 1 processor / response time for N processors
+* Response time for 10% is higher: the cost of declustering and storing the result increases
+* Why the speedup of 10% clustered index selection is super-linear: When the increase of processors, a relation occupies relatively smaller percent of the whole disk (With one processor, 1 million tuple relation occupies about 66% of the disk; But with 30 disk drives, this is only 2%). Since the seek time is proportional to the square root of the distance traveled by the disk head, reducing the size the relation fragment on each disk significantly reduces the amount of time that query spends seeking.
+* Why 1% clustered is sub-linear: The cost of initiating a select and store operator on each processor is high. For clustered index, the original process time is short, so the cost is more apparent.
+
+
+
+### Select scaleup
+
+<img src="week2_assets/performance_2.png" style="zoom:67%;" />
+
+* Almost constant.
+* Slight increase -> due to the overhead of initiating a selection and store operator at each site.
+
+
+
+### Join speedup
+
+<img src="week2_assets/performance_3.png" style="zoom:67%;" />
+
+* If the relation is hash partitioned on non-join attribute, the two input relations must be redistributed by hashing on the join attribute value of each tuple.
+* Speedup - slightly sublinear -> 1. The cost of starting four operator tasks on each processor increases; 2. The effect of short-circuiting local messages diminishes as the number of processors is increased (when n=5, 1/5 of the tuples are destined for itself and don't need to go through network; while when n=30, the percentage is only 1/30).
