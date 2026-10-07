@@ -78,7 +78,7 @@ Stateful (store the persistent state of key-value pairs).
 
 ```mermaid
 flowchart TD
-    A[Servers attempt to become<br/>Cluster Controller]
+    A["Servers (coordinators) attempt to<br/>become Cluster Controller"]
     B[Cluster Controller elected]
     C[Cluster Controller<br/>recruits new Sequencer]
     D["Sequencer reads old LS (Log System)<br/>configuration from Coordinators"]
@@ -190,9 +190,9 @@ What does FDB guarantee:
 
 **The transaction system combines OCC and MVCC to ensure strict serializability.** 
 
-### MVCC：Multi-Version Concurrency Control
+### MVCC: Multi-Version Concurrency Control
 
-Storage Servers maintain **multiple versions** of data, allowing read operations to access a consistent snapshot of the data at a specific "read version" without blocking writes. When a client reads a key, it specifies the read version it received from the Sequencer, and the Storage Server returns the value of the key at the largest version less than or equal to the requested read version.
+Storage Servers maintain **multiple versions** of data, allowing read operations to access a consistent snapshot of the data at a specific "read version" without blocking writes. When a client reads a key, it specifies the read version it received from the Sequencer, and the Storage Server returns the value of the key at **the largest version less than or equal to the requested read version**.
 
 * **Why MVCC?**
 
@@ -212,7 +212,7 @@ To ensure that one transaction can read from **a consistent snapshot** without b
 
   5 seconds in FDB (avoid taking too much memory).
 
-  Changes written to Storage System after the MVCC window.
+  Recent changes are kept as multi-versioned data in the StorageServer's memory. Only after they leave the 5-second MVCC window are they written to the on-disk storage engine, which stores a single version per key.
 
 
 
@@ -226,7 +226,7 @@ Each transaction Ti has three phases:
 * Validation phase: Ti determines whether the local variables whose values have been overwritten can be copied to the database. If not then abort. Otherwise, proceed to Write phase.
 * Write phase: The values stored in local variables overwrite the value of the data items in the database.
 
-The **Resolver** is the component that implements OCC. When a transaction is ready to commit, the Proxy sends its read and write key ranges to the Resolver(s). Each Resolver maintains a history of recently committed key ranges and their commit versions. It checks if the transaction's read set **conflicts with any writes** from other transactions that have committed since the current transaction's read version was issued. If a conflict is found, the transaction is aborted; otherwise, it is allowed to commit.
+The **Resolver** is the component that implements OCC. When a transaction is ready to commit, the Proxy sends its read and write key ranges to the Resolver(s). Each Resolver maintains a history of recently committed key ranges and their commit versions. It checks if the transaction's read set **conflicts with any writes** from other transactions that have committed since the current transaction's read version was issued. If any Resolver finds a conflict, the transaction is aborted; only if all Resolvers admit it can the transaction proceed to commit.
 
 
 
@@ -239,7 +239,7 @@ The **Resolver** is the component that implements OCC. When a transaction is rea
 * **KCV** (Known-committed version): The **maximum LSN** that this Proxy has committed. **Log Servers** reply to the Proxy once the log data is made durable, and the Proxy updates its KCV to the LSN if all replica Log Servers have replied and this LSN is larger than the current KCV. Each **Log Server** also keeps **the maximum KCV received and a DV**.
 * **DV** (Durable version): The maximum LSN persisted by the **Log Server**. DV is decided by each Log Server, and it's **ahead of KCV** (in flight). KCV is updated only when **all copies** of a record has been received by the Log Servers.
 * **PEV** (Epoch's end version): maximum of all KCV received by the Sequencer.
-* **RV** (Recovery's version): Minimum of all DV **Logs** in the range of **[𝑃𝐸𝑉 +1,𝑅𝑉]** are copies from previous epoch’s Log Servers to the current ones, for healing the replication degree in case of Log Server failures.
+* **RV** (Recovery's version): Minimum of all DV. **Logs** in the range of **[𝑃𝐸𝑉 +1,𝑅𝑉]** are copies from previous epoch’s Log Servers to the current ones, for healing the replication degree in case of Log Server failures.
 
 
 
@@ -247,7 +247,7 @@ Redo log processing is the same as normal log forward path in FDB. The new TS on
 
 ```mermaid
 flowchart TD
-    A[Detecting a failure and <br/>recruits a new transaction system]
+    A["Detecting a failure and <br/>recruits a new transaction system<br/>(recruits a new Sequencer which<br/>bootstraps a new TS and LS)"]
     B[New Sequencer reads the previous TS configuration<br/>from Coordinators and locks this information]
     C["Sequencer recovers previous TS system states<br/>(including Log Servers)"]
     D[Sequencer recruits a new set of<br/>Proxies, Resolvers, and Log Servers]
@@ -274,3 +274,42 @@ Logs in the range of **[PEV + 1, RV]** are copied from previous epoch’s Log Se
 Storage Servers will roll back any data larger than RV.
 
 <img src="week4_assets/recovery.png" alt="strict_serial" width="600">
+
+**[Replications]**
+
+* **Metadata replication**: System metadata of the control plane is stored on Coordinators. As long as a quorum (i.e. majority) of Coordinators are live, this metadata can be recovered.
+* **Log replication**: Each shard of log record is synchronously replicated on k=f+1 Log Servers (f: FDB can tolerate f failures).
+* **Storage replication**: Every shard is asynchronously replicated to k=f+1 Storage Servers, which is called a team. A failure of a Storage Server triggers **Data Distributor** to move data from teams containing the failed process to other healthy teams.
+
+
+
+## Performance
+
+### Scalability
+
+<img src="week4_assets/scalability.png" alt="strict_serial" width="500">
+
+* Raw write throughput is three times higher, since each write is replicated three times to Log Servers and Storage Servers.
+* Write operation's scalability is closer to linear.
+* Higher operations result in higher throughput. But increasing operations further (e.g. 1000) doesn't bring significant changes.
+* Write -> Log servers are CPU saturated; Read -> Storage Servers are saturated; 90/10 read-write -> Resolvers and Proxies are CPU saturated
+
+
+
+### Throughput and average latency for different operation rate
+
+<img src="week4_assets/performance_for_diff_ops.png" alt="strict_serial" width="500">
+
+* The throughput scales linearly with more operations per second (Ops) for both reads and writes.
+* Read - single hop operation (client -> Storage Server), GRV - two hop (client -> Proxy -> Sequencer). So GRV has higher latencyj than read.
+* When Ops is below 100k, the mean latencies remain stable. When Ops exceeds 100k, latencies increase because of more queuing time. At 2m Ops, Resolvers and Proxies are saturated.
+
+
+
+### Reconfiguration Duration
+
+<img src="week4_assets/reconfiguration.png" alt="strict_serial" width="300">
+
+* Recovery are not bounded by the data or transaction log size, and are only related to the system metadata sizes -> fast recovery. The new Transaction System can begin accepting new transactions even before all data from the old Log Servers has been replayed by the Storage Servers.
+* Do not need to undo log processing. Only need to determine the end of the redo log from the old epoch (which is RV). Any data after that version is simply discarded by the Storage Servers.
+
