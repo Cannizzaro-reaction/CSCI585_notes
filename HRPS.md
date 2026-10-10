@@ -88,6 +88,23 @@ HRPS was developed to strike a compromise, providing good performance for both t
 
 ## Core Mechanism
 
+**What to achieve?**
+
+Execute range queries with minimal resource requirements on a single processor while directing CPU and/or I/O intensive queries to a large number of processors.
+
+**The key factor to decide?**
+
+How many tuples **each fragment** of a relation should contain.
+
+**The factors need to take into consideration?**
+
+* The **resource requirements** of the queries accessing the relation
+* The processing capability of the system
+* **The overhead of using each additional processor to execute a query**
+* The cost of **searching the range table** constructed by the hybrid-range declustering strategy (important when execution time is short)
+
+
+
 ### M = Desired Degree of Parallelism for a Query
 
 **The first step is to decide the degree of parallelism (M) we want to get (no matter of how many servers we got).**
@@ -100,6 +117,8 @@ $$ RT(M)=\frac{CPU_{Ave}+Disk_{Ave}+Net_{Ave}}{M}+M\cdot CP $$
 
 $$ M=\sqrt{\frac{CPU_{Ave}+Disk_{Ave}+Net_{Ave}}{CP}} $$
 
+If the relation is declustered across M processors, the response time for $Q_{ave}$ will be minimized.
+
 > For each query **Qi**, the workload defines the **CPU processing time** ($CPU_i$), the **Disk Processing Time** ($Disk_i$), and the **Network Processing time** ($Net_i$) of that query.
 >
 > RT(M): The **response time (RT)** of a query in terms of **the number of processors (M)**
@@ -109,6 +128,8 @@ $$ M=\sqrt{\frac{CPU_{Ave}+Disk_{Ave}+Net_{Ave}}{CP}} $$
 > $ExecutionTime (Q_{ave}) = CPU_{Ave}+Disk_{Ave}+Net_{Ave}$
 >
 > CP: The **overhead** with using an additional processor
+
+**M: The number of processors that should participate in the execution of $Q_{ave}$/ each query.**
 
 
 
@@ -122,11 +143,13 @@ $$FC=\frac{TuplesPerQ_{ave}}{M}$$
 
 The **total number of fragments** is the relation's cardinality (how many tuples are in this relation) divided by FC.
 
-**Finally**, the fragments are distributed among the processors in a **round-robin** fashion, insuring that M adjacent fragments will be assigned to different processors (unless N, the number of processors, is less than M).
+**Finally**, the **fragments** are distributed among the processors in a **round-robin** fashion, insuring that M adjacent fragments will be assigned to different processors (unless N, the number of processors, is less than M).
 
 
 
 #### Comparison of M and N
+
+Range table: the information about the assignment of fragments to processors.
 
 > M: desired level of parallelism
 >
@@ -148,7 +171,9 @@ RP: 1 node, HRPS: 2 nodes
 
 <img src="week5_assets/M_gt_N.png" alt="architecture" width="750">
 
-RP: 1 node, HRPS: 5 nodes (better parallelism, superior response time, better throughput)
+Hash: send the query to all N processors (unnecessary cost in startup, communication, and termination overheads associated with more processors).
+
+HRPS: 5 nodes (better parallelism, superior response time, better throughput).
 
 
 
@@ -221,6 +246,33 @@ $$ F = \frac{Cardinality(Rel)}{FC} = \frac{Cardinality(Rel) \times M}{TuplesPerQ
   * Disk cache: When reading continuous pages, the next page will be put into the disk cache in advance.
   * Why this trend does not appear in 10 records? -- For 10 records, the prefetch is useless, because the query is very selective.
 * When MPL increase, nodes will be fully utilized. After a certain point, queries collide, so the increase level off.
+
+
+
+**Mixed Workload: one-half 0.0001% selection + one-half 10% selection**
+
+<img src="week5_assets/mix_performance.png" alt="architecture" width="350">
+
+* HRPS: use single node for 0.0001% selection, all nodes for 10% selection, Hash: use all the processors for both queries, Range: 0.0001% selection to one node, 10% selection to 3 nodes
+* Hash and HRPS outperform Range -> the execution of the 10% selection dominates the computation of the average throughput
+* After multiprogramming level reaches 4, the difference between Hash and HRPS is limited -> 10% selection dominates
+
+
+
+**Mixed Workload: multiprogramming level=50, percentage of each selection varies**
+
+<img src="week5_assets/mix_performance_2.png" alt="architecture" width="350">
+
+* With more than 10% of 10% selection query, Hash and HRPS are almost the same.
+
+<img src="week5_assets/mix_performance_3.png" alt="architecture" width="350">
+
+* The percentage improvement in throughput provided by Hash and HRPS relative to Range: From x=10%, Hash & HRPS outperform Range by an increasing widening margin.
+* Levels off at x=40%: the disk has become 100% utilized.
+
+<img src="week5_assets/mix_performance_4.png" alt="architecture" width="350">
+
+* Before x=5%, Range outperforms Hash. Between 5%~7%, HRPS is apparently the best.
 
 
 
