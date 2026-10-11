@@ -22,7 +22,7 @@
 
 ### CAP Theorem
 
-A multi-node system may provide two out of three of the following guarantees at any given time.
+A multi-node system may provide either consistency+partition tolerance, or availability+partition tolerance, at any given time.
 
 * **Consistency**: A read request observes the most recent write or an error.
 * **Availability**: A request observes a non-error response, even when nodes have failed.
@@ -108,8 +108,10 @@ Validation is expensive -> offline validation after the experiment completes
 
 <img src="week6_assets/TTL_vs_unpredictable.png" alt="architecture" width="450">
 
+> red number: α, the percentage of request that observe a response time faster than 100 msec.
+
 * For shorter TTL: cache expires sooner -> the percentage of missing increases -> more visit to DB (less unpredictable data)
-* For longer TTL: percentage of unpredictable data decreases, but the requests that satisfy SLA also decrease (need more time to process the requests if cache misses)
+* For longer TTL: cache expires later -> fewer cache misses -> fewer visits to DB -> more requests satisfy SLA, but the percentage of unpredictable (stale) data increases
 * Why one thread can also produce unpredictable data?
   * A thread might first emulate a user editing his profile page, then emulates another user viewing this page. At that time, unpredictable data can appear.
   * But with the increase of TTL, the value (where T=1) doesn't change much. Because the system is sitting idle. Cache is unimportant at this stage.
@@ -140,7 +142,7 @@ Problem: Repeated construction and destruction of database is time consuming -->
 
 Input: The socialite's id and the id of the referenced member $U_r$
 
-Output: The profile information of $U_r$ --> $U_r$'s number of friends, $U_r$'s number of resources (e.g. images), $U_r$'s number of pending friend invitations (if viewing one's own profile)
+Output: The profile information of $U_r$ --> $U_r$'s attribute, $U_r$'s number of friends, $U_r$'s number of resources (e.g. images), $U_r$'s number of pending friend invitations (if viewing one's own profile)
 
 <img src="week6_assets/VP_results.png" alt="architecture" width="650">
 

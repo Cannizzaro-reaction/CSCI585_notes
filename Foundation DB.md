@@ -237,7 +237,7 @@ The **Resolver** is the component that implements OCC. When a transaction is rea
 * **LSN** (Log Sequence Number): The last committed version number given by the Sequencer to the Proxy. A Proxy sends **both LSN and the previous LSN** to **Resolvers** and **Log Servers** so that they can serially process transactions in the order of LSNs. Similarly, Storage Servers pull log data from Log Servers in increasing LSN order.
 
 * **KCV** (Known-committed version): The **maximum LSN** that this Proxy has committed. **Log Servers** reply to the Proxy once the log data is made durable, and the Proxy updates its KCV to the LSN if all replica Log Servers have replied and this LSN is larger than the current KCV. Each **Log Server** also keeps **the maximum KCV received and a DV**.
-* **DV** (Durable version): The maximum LSN persisted by the **Log Server**. DV is decided by each Log Server, and it's **ahead of KCV** (in flight). KCV is updated only when **all copies** of a record has been received by the Log Servers.
+* **DV** (Durable version): The maximum LSN persisted by the **Log Server**. DV is decided by each Log Server, and it's **ahead of KCV** (in flight). KCV is updated only when **all copies** of a record has been made persistent by the Log Servers.
 * **PEV** (Epoch's end version): maximum of all KCV received by the Sequencer.
 * **RV** (Recovery's version): Minimum of all DV. **Logs** in the range of **[𝑃𝐸𝑉 +1,𝑅𝑉]** are copies from previous epoch’s Log Servers to the current ones, for healing the replication degree in case of Log Server failures.
 
