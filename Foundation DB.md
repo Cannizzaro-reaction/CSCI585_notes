@@ -163,7 +163,7 @@ flowchart TD
 >
 > Later on, Storage Servers continuously pull mutation logs from Log-Servers and apply committed updates to disks.
 >
-> Conflict checking: Rr (range of read) of one transaction overlaps with the Rw (range of write) of another.
+> Conflict checking: A transaction T conflicts if its read set (Rr) overlaps with the write set (Rw) of any transaction that committed **after T's read version and before T's commit version**. In other words, some key that T read was modified and committed by another transaction before T could commit, so T's reads are stale and T is aborted.
 >
 > **LSN (Log Sequence Number)**: The last committed version number given by the Sequencer
 >
